@@ -227,6 +227,12 @@ define docker::run(
   if $restart {
 
     $cidfile = "/var/run/${service_prefix}${sanitised_title}.cid"
+    exec { "remove ${title} cidfile":
+      command => "rm -f ${cidfile}",
+      unless  => "${docker_command} ps --no-trunc -a | grep `cat ${cidfile}`",
+      path    => ['/bin', '/usr/bin'],
+      notify  => Exec["run ${title} with docker"],
+    }
 
     $run_with_docker_command = [
       "${docker_command} run -d ${docker_run_flags}",
@@ -235,7 +241,7 @@ define docker::run(
     ]
     exec { "run ${title} with docker":
       command     => join($run_with_docker_command, ' '),
-      unless      => "${docker_command} ps --no-trunc -a | grep `cat ${cidfile}`",
+      refreshonly => true,
       environment => 'HOME=/root',
       path        => ['/bin', '/usr/bin'],
       timeout     => 0
