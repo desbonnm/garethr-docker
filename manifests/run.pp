@@ -227,6 +227,15 @@ define docker::run(
   if $restart {
 
     $cidfile = "/var/run/${service_prefix}${sanitised_title}.cid"
+
+    if $remove_container_on_start {
+      exec { "remove ${title} container":
+        command     => "${docker_command} rm ${sanitised_title} || /bin/true",
+        path        => ['/bin', '/usr/bin'],
+        before      => Exec["remove ${title} cidfile"],
+      }
+    }
+
     exec { "remove ${title} cidfile":
       command => "rm -f ${cidfile}",
       unless  => "${docker_command} ps --no-trunc -a | grep `cat ${cidfile}`",
